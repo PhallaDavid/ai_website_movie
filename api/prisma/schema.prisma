@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  legacyGoogleId String        @unique @map("googleId")
+  firebaseUid   String?        @unique
+  email         String         @unique
+  name          String
+  avatarUrl     String?
+  bio           String?
+  role          String         @default("USER")
+  status        String         @default("ACTIVE")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  movies        Movie[]        @relation("Uploader")
+  orders        Order[]
+  notifications Notification[]
+}
+
+model Movie {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  genre       String
+  posterUrl   String?
+  videoPath   String
+  priceCents  Int       @default(0)
+  status      String    @default("DRAFT")
+  uploaderId  String
+  uploader    User      @relation("Uploader", fields: [uploaderId], references: [id])
+  orders      Order[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Order {
+  id         String   @id @default(cuid())
+  userId     String
+  movieId    String
+  amountCents Int
+  status     String   @default("PENDING")
+  stripeSessionId String? @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id])
+  movie      Movie    @relation(fields: [movieId], references: [id])
+  @@index([userId, movieId, status])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+  @@index([userId, createdAt])
+}
